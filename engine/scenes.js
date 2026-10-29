@@ -3,7 +3,8 @@ const GY=650; // feet baseline for standing characters
 const F=(o,x,s,extra={})=>Object.assign({html:fig(o),x,y:extra.y??GY,anchor:'b',z:10,s,breathe:1,poses:[[0,o.pose||{}]]},extra);
 // kinetic title: lines of words, each word revealed at its own time
 function TXT(lines,times,size,x,y,extra={}){let k=0;const html=`<div class="tt" style="font-size:${size}px;${extra.style||''}">`+lines.map(l=>l.split(' ').map(w=>`<span class="wd">${w}</span>`).join(' ')).join('<br>')+`</div>`;
-  return Object.assign({html,x,y,z:20,wt:times,at:times[0]-0.01,a:'none'},extra);}
+  const n=lines.join(' ').split(' ').length;const wt=[...Array(n)].map((_,i)=>times[Math.min(i,times.length-1)]);
+  return Object.assign({html,x,y,z:20,wt,at:times[0]-0.01,a:'none'},extra);}
 const REF=(t,x,y,at)=>({html:`<div class="ref">${t}</div>`,x,y,z:20,at,a:'fade'});
 const Q=(x,y,sz,at,extra={})=>Object.assign({html:qmark(sz),x,y,z:15,at,float:6,sway:6},extra);
 const LBL=(t,x,y,at,size=34)=>({html:`<div class="lbl" style="font-size:${size}px">${t}</div>`,x,y,z:20,at,a:'rise'});
@@ -64,12 +65,12 @@ const SCENES=[
   {html:`<div style="filter:blur(10px)">${svg(520,160,'-260 -80 520 160',cloud(-60,30,300,'#fff',.85)+cloud(120,40,260,'#fff',.8))}</div>`,x:1067,y:520,z:14,at:W(9,'mystery'),a:'slideR',d:.8},
 ]},
 // 7 "A dove on a banner. A name at the end of the Sign of the Cross."
-{t0:W(10,'dove')-0.1,trans:'whip',cam:[{at:W(11,'name'),d:0.9,x:1240}],drift:0.03,els:[...interior(345,42),
+{t0:W(10,'dove')-0.1,trans:'whip',cam:[{at:W(11,'name'),d:0.7,x:1240}],drift:0.03,els:[...interior(345,42),
   {html:banner(1),x:420,y:330,z:8,at:W(10,'banner'),a:'wipeD',d:.6,sway:1.2},
   {frames:[dove(.62,'up'),dove(.62,'down')],html:'',x:820,y:140,z:12,at:W(10,'dove'),a:'fade',d:.2,fps:7,frUntil:W(10,'banner')+0.4,move:{at:W(10,'dove'),d:0.6,x:420,y:290},float:3},
-  TXT(['In the name of the Father,'],[W(11,'name')],44,1060,250,{style:'color:#fff'}),
-  TXT(['and of the Son,'],[W(11,'name')+0.15],44,1060,318),
-  TXT(['and of the Holy Spirit.'],[W(11,'end')],54,1060,400,{style:'color:#ffe28a'}),
+  TXT(['In the name of the Father,'],[W(11,'name')+0.55],44,1060,250,{style:'color:#fff'}),
+  TXT(['and of the Son,'],[W(11,'name')+0.7],44,1060,318),
+  TXT(['and of the Holy Spirit.'],[W(11,'end')+0.3],54,1060,400,{style:'color:#ffe28a'}),
   F({robe:'cassock',hair:'short',dir:-1},1640,1.05,{poses:[[0,{lU:10,rU:10}],[W(11,'name'),{rU:16,rF:-128,tilt:-8,d:.4}],[W(11,'end'),{rU:6,rF:-158,d:.35}],[W(11,'sign'),{rU:30,rF:-118,d:.35}]]}),
   {html:svg(130,170,'-65 -85 130 170',`<path class="dr" d="M0,-70 V70 M-48,-22 H48" stroke="${INK}" stroke-width="22" stroke-linecap="round" fill="none"/><path class="dr" d="M0,-70 V70 M-48,-22 H48" stroke="#ffe28a" stroke-width="12" stroke-linecap="round" fill="none"/>`),x:1460,y:200,z:12,at:W(11,'sign'),a:'none',drawD:.7,float:4},
   {html:sunburst(300,'#fff',.3),x:1460,y:200,z:11,at:W(11,'sign'),a:'grow',spin:12},
