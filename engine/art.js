@@ -19,12 +19,13 @@ function wave(seed,amp,base){const r=rng(seed);const F=[0,1,2].map(i=>[(0.002+r(
 // ---------- BACKGROUND LANDSCAPE ----------
 // returns an array of layer elements (with parallax depth) for a scene
 function land(o){
-  const h=o.h, S=o.s??45, W=o.w??1800, H=o.hgt??1000, cx=o.cx??640, r=rng(o.seed||1);
+  const hs=o.h, S=o.s??45, W=o.w??1800, H=o.hgt??1000, cx=o.cx??640, r=rng(o.seed||1);
   const x0=cx-W/2, y0=360-H/2, X1=x0+W;
+  const h=(hs>=180&&hs<=245)?(o.hh??150):hs;
   const L=[]; const lay=(body,depth,z,blur)=>L.push({html:svg(W,H,`${x0} ${y0} ${W} ${H}`,body),x:cx,y:360,depth,z,filter:blur?`blur(${blur}px)`:undefined});
   // sky
   const g=uid('sk');
-  let sky=`<defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${o.sky1||hsl(h+8,S+5,70)}"/><stop offset=".75" stop-color="${o.sky2||hsl(h,S+10,88)}"/></linearGradient>
+  let sky=`<defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${o.sky1||hsl(hs+8,S+5,70)}"/><stop offset=".75" stop-color="${o.sky2||hsl(hs,S+10,88)}"/></linearGradient>
    <radialGradient id="${g}s" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
    <rect x="${x0}" y="${y0}" width="${W}" height="${H}" fill="url(#${g})"/>`;
   if(o.sun) sky+=`<circle cx="${o.sun[0]}" cy="${o.sun[1]}" r="420" fill="url(#${g}s)" opacity=".75"/>`;

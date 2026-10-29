@@ -17,6 +17,7 @@ html,body{margin:0;background:#000;overflow:hidden}
 .ref{font-family:'Mont';font-weight:800;font-size:21px;color:#fff;letter-spacing:.08em;line-height:1;white-space:nowrap;background:rgba(37,33,43,.88);border-radius:10px;padding:8px 14px 9px}
 .pill{font-family:'Mont';font-weight:800;color:#fff;background:#24202b;border-radius:14px;padding:10px 20px 12px;line-height:1;white-space:nowrap;font-size:34px}
 .lbl{font-family:'Mont';font-weight:900;font-size:34px;color:#fff;line-height:1;white-space:nowrap;letter-spacing:.02em;text-shadow:0 3px 14px rgba(30,20,40,.45),0 1px 2px rgba(30,20,40,.4)}
+.eye{transform-box:fill-box;transform-origin:center}
 #grain{position:absolute;inset:0;pointer-events:none;z-index:50;opacity:.10;mix-blend-mode:multiply}
 #vig{position:absolute;inset:0;pointer-events:none;z-index:51;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 62%,rgba(40,20,40,.22) 100%)}
 </style></head>
@@ -24,6 +25,8 @@ html,body{margin:0;background:#000;overflow:hidden}
 <div id="stage"></div>
 <script src="T.js"></script>
 <script src="art.js"></script>
+<script src="chibi.js"></script>
+<script src="props.js"></script>
 <script src="scenes.js"></script>
 <script>
 const stage=document.getElementById('stage');
@@ -43,6 +46,7 @@ SCENES.forEach((sc,i)=>{
     e.wds=[...inn.querySelectorAll('.wd')];
     e.drs=[...inn.querySelectorAll('.dr')].map(p=>{const L=p.getTotalLength?p.getTotalLength():500;p.style.strokeDasharray=L;return [p,L];});
     if(e.poses){e.armL=inn.querySelector('.armL');e.armR=inn.querySelector('.armR');e.foreL=inn.querySelector('.foreL');e.foreR=inn.querySelector('.foreR');e.headG=inn.querySelector('.head');}
+    e.fcs=[...inn.querySelectorAll('.fc')];e.fcT=[...inn.querySelectorAll('.fcT')];e.eyes=[...inn.querySelectorAll('.eye')];e._fk=-1;
   });
 });
 // grain overlay
@@ -73,6 +77,9 @@ function poseAt(e,t){let cur=Object.assign({lU:8,lF:0,rU:8,rF:0,tilt:0},e.poses[
   for(let k=1;k<e.poses.length;k++){const [at,p]=e.poses[k];const q=eInOut(clamp((t-at)/(p.d||0.4)));if(q<=0)break;
     for(const key of ['lU','lF','rU','rF','tilt'])if(p[key]!==undefined)cur[key]+= (p[key]-cur[key])*q;}
   return cur;}
+// mouth flaps open shortly after each spoken word starts (audible onset ~0.15s after its timestamp)
+const WSTARTS=WX.flat().map(w=>w[1]).sort((a,b)=>a-b);
+function mouthOpen(t){let lo=0,hi=WSTARTS.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(WSTARTS[m]<=t-0.15)lo=m;else hi=m-1;}const d=t-0.15-WSTARTS[lo];return d>=0&&d<0.16;}
 function renderScene(sc,t){
   const c=cam(sc,t);
   for(const e of sc.els){
@@ -112,14 +119,16 @@ function renderScene(sc,t){
     if(e.wt){ e.wds.forEach((w,j)=>{const q=clamp((t-e.wt[j])/0.28);w.style.opacity=clamp(q*2.5);w.style.transform=`translateY(${(1-eBack(q))*26}px) scale(${0.7+0.3*eBack(q)})`;}); }
     if(e.drs.length){ const q=eOut(clamp((t-(e.drawAt??at))/(e.drawD||0.6))); e.drs.forEach(([pth,L])=>pth.style.strokeDashoffset=L*(1-q)); }
     if(e.poses){ const P=poseAt(e,t), w=Math.sin(tt*2.3)*2;
-      e.armL&&e.armL.setAttribute('transform',`translate(-42,-222) rotate(${P.lU+w})`);
-      e.foreL&&e.foreL.setAttribute('transform',`translate(0,74) rotate(${P.lF})`);
-      e.armR&&e.armR.setAttribute('transform',`translate(42,-222) rotate(${-P.rU-w})`);
-      e.foreR&&e.foreR.setAttribute('transform',`translate(0,74) rotate(${-P.rF})`);
-      e.headG&&e.headG.setAttribute('transform',`translate(0,-240) rotate(${P.tilt+Math.sin(tt*1.3)*1.5})`); }
+      const set=(n,r)=>{if(n)n.setAttribute('transform',`translate(${n.dataset.b}) rotate(${r})`);};
+      set(e.armL,P.lU+w);set(e.foreL,P.lF);set(e.armR,-P.rU-w);set(e.foreR,-P.rF);
+      e.headG&&e.headG.setAttribute('transform',`rotate(${P.tilt+Math.sin(tt*1.3)*1.5} ${e.headG.dataset.c||'0 -100'})`); }
+    if(e.fcs.length){ let k=0; if(e.fc) e.fc.forEach(([at,idx])=>{if(t>=at)k=idx;});
+      const tw=e.talk&&(e.talk===true||e.talk.some(([a,b])=>t>=a&&t<=b)), open=tw&&mouthOpen(t);
+      const key=k*2+(open?1:0); if(key!==e._fk){e.fcs.forEach((g,j)=>g.style.display=(j===k&&!open)?'inline':'none');e.fcT.forEach((g,j)=>g.style.display=(j===k&&open)?'inline':'none');e._fk=key;}
+      if(e.blink!==false&&e.eyes.length){const ph=(t+(e.x||0)*0.0037)%3.3;const v=ph<0.12?'scaleY(0.1)':'none';e.eyes.forEach(n=>n.style.transform=v);} }
     if(e.tick) e.tick(t,e);
   }
 }
-window.render=render; window.DUR=60; render(0);
+window.render=render; window.DUR=269.8; render(0);
 </script>
 </body></html>

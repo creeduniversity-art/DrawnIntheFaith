@@ -3,5 +3,5 @@ const WX=[[["in", 0.0], ["the", 0.12], ["bible", 0.28], ["saint", 0.7], ["paul",
 function WW(n,w,i=0){const L=WX[n].filter(x=>x[0]===w);if(!L.length)throw new Error('no word '+w+' in '+n);return L[Math.min(i,L.length-1)][1]-0.1;}
 // OFF: measured against the audio, word timestamps run ~0.15-0.4s ahead of the audible word,
 // so elements trigger OFF seconds after the timestamp and never before the word is heard.
-const OFF=0.2;
+const OFF=0.25;
 function W(n,w,i=0){const L=WX[n].filter(x=>x[0]===w);if(!L.length)throw new Error('no word '+w+' in '+n);return L[Math.min(i,L.length-1)][1]+OFF;}
