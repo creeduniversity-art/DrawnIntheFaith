@@ -1,0 +1,101 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Flat sample v2</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#2fb4ff;overflow:hidden}
+#stage{position:relative;width:1280px;height:720px;overflow:hidden;font-family:'Inter Display',Inter,sans-serif;color:#fff}
+.scene{position:absolute;inset:0;display:none;overflow:hidden;transform-origin:640px 360px}
+.bg{position:absolute;inset:0}
+.el{position:absolute;left:0;top:0;transform-origin:0 0}
+.inner{position:absolute;left:0;top:0;transform:translate(-50%,-50%);line-height:0}
+.txt{font-family:'Inter Display',Inter,sans-serif;font-weight:900;letter-spacing:-.005em;line-height:1.02;white-space:nowrap}
+.eye{transform-box:fill-box;transform-origin:center}
+</style></head>
+<body>
+<div id="stage"></div>
+<script src="T.js"></script>
+<script src="kart.js"></script>
+<script src="scenes.js"></script>
+<script>
+const stage=document.getElementById('stage');
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const eOut=p=>1-Math.pow(1-p,3), eIn=p=>p*p*p;
+const eInOut=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const eBack=p=>{const s=1.7;return 1+(s+1)*Math.pow(p-1,3)+s*Math.pow(p-1,2);};
+const TR=0.5;
+SCENES.sort((a,b)=>a.t0-b.t0);
+SCENES.forEach((sc,i)=>{
+  sc.t1=i<SCENES.length-1?SCENES[i+1].t0:9999;
+  const d=document.createElement('div');d.className='scene';stage.appendChild(d);sc.node=d;
+  const bg=document.createElement('div');bg.className='bg';bg.innerHTML=sc.bg||'';d.appendChild(bg);
+  sc.els.forEach(e=>{const w=document.createElement('div');w.className='el';w.style.zIndex=e.z??2;
+    const inn=document.createElement('div');inn.className='inner';inn.innerHTML=e.html;if(e.anchor==='b')inn.style.transform='translate(-50%,-100%)';w.appendChild(inn);d.appendChild(w);e.node=w;e.inn=inn;e.cur=-1;
+    if(e.frames){e.fr=e.frames.map(h=>{const f=document.createElement('div');f.innerHTML=h;f.style.display='none';f.style.lineHeight=0;return f;});inn.innerHTML='';e.fr.forEach(f=>inn.appendChild(f));}
+    if(e.swap){e.sw=[e.html,...e.swap.map(s=>s[1])].map(h=>{const f=document.createElement('div');f.innerHTML=h;f.style.display='none';f.style.lineHeight=0;return f;});inn.innerHTML='';e.sw.forEach(f=>inn.appendChild(f));}
+    e.eyes=[...inn.querySelectorAll('.eye')];});
+});
+function cam(sc,t){let c=Object.assign({x:640,y:360,z:1},sc.cam0||{});
+  for(const k of (sc.cam||[])){const p=eInOut(clamp((t-k.at)/(k.d||1)));if(p<=0)continue;
+    c={x:c.x+((k.x??c.x)-c.x)*p,y:c.y+((k.y??c.y)-c.y)*p,z:c.z+((k.z??c.z)-c.z)*p};}
+  const dz=(sc.drift??0.035)*clamp((t-sc.t0)/Math.max(1,sc.t1-sc.t0+TR));c.z*=1+dz;return c;}
+function render(t){
+  let i=SCENES.findIndex(s=>t>=s.t0&&t<s.t1); if(i<0) i=0;
+  const sc=SCENES[i], dt=t-sc.t0, prev=SCENES[i-1];
+  SCENES.forEach((s,k)=>{ s.node.style.display=(k===i||(k===i-1&&dt<TR))?'block':'none'; s.node.style.filter='none';});
+  const tr=sc.trans||'cut';
+  if(prev&&dt<TR&&tr!=='cut'){const q=eInOut(clamp(dt/TR));renderScene(prev,t);prev.node.style.zIndex=1;sc.node.style.zIndex=2;
+    let a='',b='',ca='none',oa=1,ob=1;
+    if(tr==='fade'){oa=q;}
+    else if(tr==='iris'){const [cx,cy]=sc.irisAt||[640,360];ca=`circle(${q*1500}px at ${cx}px ${cy}px)`;}
+    else if(tr==='zoom'){a=`scale(${1.5-0.5*q})`;oa=clamp(q*1.6);b=`scale(${1+1.6*q})`;ob=1-q;}
+    else if(tr==='push'||tr==='whip'){const dir=sc.dir||1;a=`translateX(${(1-q)*1280*dir}px)`;b=`translateX(${-q*1280*dir}px)`;
+      if(tr==='whip'){const bl=Math.sin(q*Math.PI)*14;sc.node.style.filter=`blur(${bl}px)`;prev.node.style.filter=`blur(${bl}px)`;}}
+    else if(tr==='up'){a=`translateY(${(1-q)*720}px)`;b=`translateY(${-q*720}px)`;}
+    else if(tr==='down'){a=`translateY(${-(1-q)*720}px)`;b=`translateY(${q*720}px)`;}
+    sc.node.style.transform=a;sc.node.style.opacity=oa;sc.node.style.clipPath=ca;prev.node.style.transform=b;prev.node.style.opacity=ob;prev.node.style.clipPath='none';
+  } else { sc.node.style.transform='';sc.node.style.opacity=1;sc.node.style.clipPath='none'; }
+  renderScene(sc,t);
+}
+function renderScene(sc,t){
+  const c=cam(sc,t);
+  for(const e of sc.els){
+    const at=e.at, d=e.d||0.55, a=e.a||'pop';
+    if(t<at-0.001 || (e.until!==undefined && t>e.until+0.4)){ e.node.style.display='none'; continue; }
+    e.node.style.display='block';
+    const p=clamp((t-at)/d); let op=1,tx=0,ty=0,s=1,rot=e.rot||0,clip='none';
+    if(a==='pop'){ s=0.15+0.85*eBack(p); op=clamp(p*4); }
+    else if(a==='rise'){ ty=(1-eBack(p))*80; op=clamp(p*3); }
+    else if(a==='fade'){ op=eOut(p); }
+    else if(a==='none'){ }
+    else if(a==='iris'){ clip=`circle(${eOut(p)*75}% at 50% 50%)`; }
+    else if(a==='wipe'){ clip=`inset(-20% ${(1-eOut(p))*100}% -20% -20%)`; }
+    else if(a==='wipeD'){ clip=`inset(-20% -20% ${(1-eOut(p))*100}% -20%)`; }
+    else if(a==='wipeU'){ clip=`inset(${(1-eOut(p))*100}% -20% -20% -20%)`; }
+    else if(a==='slideL'){ tx=(1-eOut(p))*-700; }
+    else if(a==='slideR'){ tx=(1-eOut(p))*700; }
+    else if(a==='drop'){ ty=(1-eBack(p))*-220; op=clamp(p*4); }
+    else if(a==='stamp'){ s=1+(1-eOut(p))*1.6; op=clamp(p*3); }
+    else if(a==='grow'){ s=eBack(p); }
+    else if(a==='growY'){ clip=`inset(${(1-eOut(p))*100}% -50% -50% -50%)`; }
+    let x=e.x,y=e.y,ms=1;
+    if(e.move){ for(const m of [].concat(e.move)){ const mp=(m.ease==='lin'?clamp:(v=>eInOut(clamp(v))))((t-m.at)/(m.d||1)); if(mp<=0)continue; x+=((m.x??x)-x)*mp; y+=((m.y??y)-y)*mp; if(m.s!==undefined) ms*=1+(m.s-1)*mp; if(m.rot!==undefined) rot+=m.rot*mp; } }
+    const tt=t+(e.ph??(e.x*0.013));
+    if(e.float) ty+=Math.sin(tt*1.7)*e.float;
+    if(e.walk) ty-=Math.abs(Math.sin(tt*7))*e.walk;
+    if(e.sway) rot+=Math.sin(tt*1.4)*e.sway;
+    if(e.pulse) s*=1+Math.sin(tt*3.2)*e.pulse;
+    if(e.spin) rot+=t*e.spin;
+    if(e.out!==undefined && t>e.out){ const q=clamp((t-e.out)/0.3); const oa=e.outA||'pop';
+      if(oa==='pop'){op*=1-q; s*=1-0.6*eIn(q);} else if(oa==='fade'){op*=1-q;} else if(oa==='down'){ty+=eIn(q)*500;} else if(oa==='up'){ty-=eIn(q)*600;} else if(oa==='left'){tx-=eIn(q)*900;} else if(oa==='right'){tx+=eIn(q)*900;} }
+    const dp=e.depth??1, Z=1+(c.z-1)*dp;
+    const X=640+(x-c.x*dp-640*(1-dp))*Z, Y=360+(y-c.y*dp-360*(1-dp))*Z;
+    e.node.style.opacity=op; e.inn.style.clipPath=clip;
+    e.node.style.transform=`translate(${X+tx}px,${Y+ty}px) rotate(${rot}deg) scale(${s*ms*(e.s||1)*Z})`;
+    if(e.fr){const k=Math.floor(t*(e.fps||6))%e.fr.length;e.fr.forEach((f,j)=>f.style.display=j===k?'block':'none');}
+    if(e.sw){let k=0;e.swap.forEach((sw,j)=>{if(t>=sw[0])k=j+1;});if(k!==e.cur){e.sw.forEach((f,j)=>f.style.display=j===k?'block':'none');e.cur=k;e.eyes=[...e.sw[k].querySelectorAll('.eye')];}}
+    if(e.blink&&e.eyes.length){ const ph=(t+e.x*0.0037)%3.1; const v=ph<0.13?'scaleY(0.12)':'none'; e.eyes.forEach(n=>n.style.transform=v); }
+  }
+}
+window.render=render; window.DUR=60.5; render(0);
+</script>
+</body></html>

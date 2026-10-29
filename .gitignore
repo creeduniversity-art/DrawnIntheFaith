@@ -1,0 +1,6 @@
+engine/pv/
+engine/parts/
+engine/render.log
+engine/video_noaudio.mp4
+engine/sheet.py
+__pycache__/
