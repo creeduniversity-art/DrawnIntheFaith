@@ -1,0 +1,98 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Character sheet</title>
+<style>
+@font-face{font-family:'Mont';font-weight:600;src:url(fonts/Montserrat-600.woff2) format('woff2')}
+@font-face{font-family:'Mont';font-weight:800;src:url(fonts/Montserrat-800.woff2) format('woff2')}
+@font-face{font-family:'Mont';font-weight:900;src:url(fonts/Montserrat-900.woff2) format('woff2')}
+html,body{margin:0;background:#f4ede2}
+#sheet{position:relative;width:1920px;height:1080px;overflow:hidden;font-family:'Mont',sans-serif;background:#f4ede2}
+.panel{position:absolute;border-radius:22px;overflow:hidden;border:5px solid #2b2320;box-shadow:0 8px 0 rgba(43,35,32,.18)}
+.panel>*{position:absolute}
+.tag{left:16px;top:14px;background:#2b2320;color:#fff;font-weight:800;font-size:22px;padding:8px 14px 9px;border-radius:12px;z-index:9;letter-spacing:.02em}
+.cap{font-weight:900;color:#fff;font-size:26px;letter-spacing:.04em;text-shadow:0 2px 10px rgba(30,20,40,.45),0 1px 2px rgba(30,20,40,.4);transform:translateX(-50%);white-space:nowrap;z-index:8}
+.ch{transform:translate(-50%,-100%);line-height:0;z-index:5}
+.fx{transform:translate(-50%,-50%);line-height:0;z-index:6}
+h1{position:absolute;left:34px;top:18px;margin:0;font-size:40px;font-weight:900;color:#2b2320;letter-spacing:-.01em}
+.sub{position:absolute;left:36px;top:68px;font-size:19px;font-weight:600;color:#6d625a}
+.lbl{font-weight:800;font-size:19px;color:#2b2320;transform:translateX(-50%);white-space:nowrap;background:#fff;border:3px solid #2b2320;border-radius:10px;padding:3px 10px;z-index:8}
+</style></head><body>
+<div id="sheet"></div>
+<script src="art.js"></script>
+<script src="chibi.js"></script>
+<script>
+const $=document.getElementById('sheet');
+function bg(w,h,hue,S,seed,o={}){const r=rng(seed);const g='pg'+seed;
+  let s=`<defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hsl(hue+6,S+5,72)}"/><stop offset=".8" stop-color="${hsl(hue,S+10,89)}"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#${g})"/>`;
+  if(o.sun)s+=`<circle cx="${o.sun[0]}" cy="${o.sun[1]}" r="${h*0.55}" fill="#fff" opacity=".35" filter="url(#bl12)"/>`;
+  for(let i=0;i<5;i++)s+=`<g filter="url(#bl6)">${cloud(r()*w,30+r()*h*0.25,90+r()*90,'#fff',.6)}</g>`;
+  const f1=wave(seed*3+1,16,h*(o.h1||0.5));s+=`<g filter="url(#bl6)" opacity=".9">${hillLayer(f1,-20,w+20,h+20,hsl(hue,S-8,68),hsl(hue,S,52),r,hue,S,64,2.5)}</g>`;
+  if(o.city)s+=`<g filter="url(#bl6)" opacity=".85">${city({x0:o.city[0],x1:o.city[1],type:o.cityType||'ancient',temple:o.temple},f1,0,w,hue,S,r)}</g>`;
+  if(o.church)s+=`<g filter="url(#bl6)">${church(o.church,f1(o.church)+10,0.7,hue,S)}</g>`;
+  const f2=wave(seed*5+2,14,h*(o.h2||0.66));s+=hillLayer(f2,-20,w+20,h+20,hsl(hue,S,57),hsl(hue,S+5,38),r,hue,S,52,3);
+  if(o.trees)for(const x of o.trees)s+=tree(x,f2(x)+10,0.5,hue,S,r,true);
+  const f3=wave(seed*7+3,8,h*(o.h3||0.8));s+=hillLayer(f3,-20,w+20,h+20,hsl(hue,S+2,48),hsl(hue,S+8,30),r,hue,S,44,3.5);
+  return svg(w,h,`0 0 ${w} ${h}`,s);}
+function panel(x,y,w,h,tag,inner){const d=document.createElement('div');d.className='panel';Object.assign(d.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px'});d.innerHTML=inner+(tag?`<div class="tag">${tag}</div>`:'');$.appendChild(d);return d;}
+const C=(x,y,o)=>`<div class="ch" style="left:${x}px;top:${y}px">${chibi(o)}</div>`;
+const FX=(x,y,html)=>`<div class="fx" style="left:${x}px;top:${y}px">${html}</div>`;
+const CAP=(x,y,t,st='')=>`<div class="cap" style="left:${x}px;top:${y}px;${st}">${t}</div>`;
+const LB=(x,y,t)=>`<div class="lbl" style="left:${x}px;top:${y}px">${t}</div>`;
+const FATHER={robe:'cassock',c1:'#33303b',hair:'father',hc:'#3b3138'};
+
+$.innerHTML=`<h1>Character redesign: style test</h1><div class="sub">Real faces · round chibi proportions · thick outlines · soft shading · costumes with detail · props they act with</div>`;
+
+// A: Father hero + expressions
+panel(30,108,600,942,'FATHER · our narrator',
+  `<div style="left:0;top:0">${bg(600,942,150,40,3,{h1:.42,h2:.52,h3:.62,church:470,trees:[80,540]})}</div>`+
+  C(300,600,{...FATHER,k:1.9,eyes:'dot',brows:'up',mouth:'grin',armL:{a:150,b:-35},armR:'chest',holdR:P_BIBLE})+
+  FX(470,170,sparkle(46))+FX(130,250,sparkle(34))+
+  `<div style="left:20px;top:640px;width:560px;height:282px;background:rgba(255,255,255,.82);border:4px solid #2b2320;border-radius:18px"></div>`+
+  CAP(300,652,'EXPRESSIONS','color:#2b2320;text-shadow:none;font-size:22px')+
+  C(90,875,{...FATHER,k:.62,eyes:'happy',mouth:'grin',armL:'down',armR:'down'})+LB(90,880,'Joy')+
+  C(225,875,{...FATHER,k:.62,eyes:'wide',brows:'up',mouth:'o',armL:'down',armR:'down',front:sweat(52,-196,1)})+LB(225,880,'Surprise')+
+  C(365,875,{...FATHER,k:.62,eyes:'side',brows:'think',mouth:'flat',look:4,armL:'down',armR:'chin'})+LB(365,880,'Thinking')+
+  C(505,875,{...FATHER,k:.62,eyes:'dot',brows:'bold',mouth:'shout',armL:'down',armR:'raise'})+LB(505,880,'Bold')
+);
+
+// B: Peter before / after Pentecost
+panel(652,108,620,470,'SAINT PETER · same man, different power',
+  `<div style="left:0;top:0;width:310px;height:470px;overflow:hidden">${bg(310,470,345,48,7,{h1:.55,h2:.7,h3:.84})}</div>`+
+  `<div style="left:310px;top:0;width:310px;height:470px;overflow:hidden">${bg(310,470,44,62,8,{h1:.55,h2:.7,h3:.84,sun:[150,40]})}</div>`+
+  `<div style="left:305px;top:0;width:10px;height:470px;background:#fff;z-index:4"></div>`+
+  C(110,430,{robe:'dress',c1:'#c98e6a',c2:null,hair:'scarf',hc:'#e9d3a6',k:.78,eyes:'dot',brows:'angry',mouth:'o',armL:'down',armR:'point',dir:1})+
+  C(225,430,{robe:'tunic',c1:'#5b7fb8',c2:'#e08b3c',hair:'peter',hc:'#a9a4ad',beard:'curly',k:.92,eyes:'wide',brows:'worried',mouth:'wavy',armL:'forward',armR:'forward',dir:-1,front:sweat(-60,-210,1.1)+sweat(-48,-180,.8)})+
+  FX(165,165,`<svg width="60" height="60" viewBox="0 0 60 60"><text x="30" y="50" text-anchor="middle" font-family="Mont" font-weight="900" font-size="54" fill="#fff" stroke="#2b2320" stroke-width="6" paint-order="stroke">!</text></svg>`)+
+  CAP(155,72,'SCARED')+
+  C(465,440,{robe:'tunic',c1:'#5b7fb8',c2:'#e08b3c',hair:'peter',hc:'#a9a4ad',beard:'curly',k:.9,eyes:'dot',brows:'bold',mouth:'shout',armL:'raise',armR:'out',front:flameSVG(0,-252,1)})+
+  `<div style="left:310px;top:395px;width:310px;height:75px;z-index:6">${[0,1,2,3,4].map(i=>`<div style="position:absolute;left:${10+i*60}px;top:${i%2?18:8}px;line-height:0">${chibi({robe:'tunic',c1:['#d9a066','#8fb9d8','#b9d68f','#e6b7c9','#c9b48f'][i],hair:['teen','veil','girl','scarf','monk'][i],hc:['#6b4a33','#6f8fc0','#7a5236','#e3c99a','#6b4a33'][i],k:.36,eyes:'happy',mouth:'smile',armL:'up',armR:'up'})}</div>`).join('')}</div>`+
+  CAP(465,72,'BOLD')
+);
+
+// C: Paul and the believers
+panel(1294,108,596,470,'SAINT PAUL · Acts 19',
+  `<div style="left:0;top:0">${bg(596,470,28,52,11,{h1:.5,h2:.68,h3:.84,city:[300,600],temple:470,trees:[40,250]})}</div>`+
+  C(150,440,{robe:'robe',c1:'#efe6d6',c2:'#b5473b',hair:'paul',hc:'#8d7b6c',beard:'long',k:1.05,eyes:'dot',brows:'up',mouth:'smile',armL:'down',armR:'point',holdL:P_SCROLL})+
+  FX(200,135,bubble(96,80,qmark(56)))+
+  C(390,440,{robe:'dress',c1:'#e9dcc4',c2:null,hair:'veil',hc:'#6f8fc0',k:.88,eyes:'dot',brows:'worried',mouth:'wavy',armL:'shrug',armR:'shrug',dir:-1})+
+  C(510,440,{robe:'tunic',c1:'#d8c3a0',c2:'#7c9a5a',hair:'teen',hc:'#5a3f2c',beard:'short',k:.92,eyes:'side',brows:'think',mouth:'flat',look:-4,armL:'down',armR:'chin',dir:-1})+
+  FX(330,150,qmark(56))+FX(560,140,qmark(46))+FX(440,95,qmark(38))
+);
+
+// D: Jesus
+panel(652,600,620,450,'JESUS',
+  `<div style="left:0;top:0">${bg(620,450,42,62,13,{h1:.55,h2:.7,h3:.84,sun:[310,60],trees:[60,560]})}</div>`+
+  `<div class="fx" style="left:310px;top:200px;z-index:1">${sunburst(520,'#fff',.28)}</div>`+
+  C(310,425,{robe:'robe',c1:'#fbf8f2',c2:'#c8463d',belt:'#e2b04a',hair:'jesus',hc:'#7a5236',beard:'short',k:1.12,eyes:'happy',mouth:'smile',armL:'out',armR:'out',halo:true})+
+  FX(500,110,dove(.42,'up',true))
+);
+
+// E: Catholics today, Father fights off the question marks
+panel(1294,600,596,450,'CATHOLICS TODAY',
+  `<div style="left:0;top:0">${bg(596,450,120,42,17,{h1:.55,h2:.7,h3:.84,city:[20,300],cityType:'modern'})}</div>`+
+  C(110,420,{robe:'hoodie',c1:'#4fb3a9',c2:'#3d968d',c3:'#5b7bb5',hair:'teen',hc:'#6b4a33',k:.85,eyes:'side',brows:'worried',mouth:'wavy',look:4,armL:'forward',armR:'forward',holdR:P_PHONE})+
+  C(235,420,{robe:'hoodie',c1:'#f08aa6',c2:'#d76f8c',c3:'#7a8fc4',hair:'girl',hc:'#9a6a3e',k:.82,eyes:'dot',brows:'worried',mouth:'o',armL:'shrug',armR:'shrug'})+
+  FX(110,130,qmark(52))+FX(235,110,qmark(44))+FX(175,175,qmark(34))+
+  C(450,420,{...FATHER,k:1,eyes:'dot',brows:'bold',mouth:'grin',armL:'hip',armR:{a:150,b:-40},holdR:P_BIBLE,dir:-1})+
+  FX(345,150,`<div style="transform:rotate(-25deg)">${qmark(50)}</div>`)+FX(330,205,svg(60,60,'-30 -30 60 60',lines(0,-10,1.1,190)))+FX(300,120,sparkle(30))
+);
+</script></body></html>
