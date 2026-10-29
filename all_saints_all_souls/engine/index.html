@@ -1,0 +1,135 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>All Saints and All Souls</title>
+<style>
+@font-face{font-family:'Mont';font-weight:600;src:url(fonts/Montserrat-600.woff2) format('woff2')}
+@font-face{font-family:'Mont';font-weight:800;src:url(fonts/Montserrat-800.woff2) format('woff2')}
+@font-face{font-family:'Mont';font-weight:900;src:url(fonts/Montserrat-900.woff2) format('woff2')}
+*{box-sizing:border-box}
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:relative;width:1280px;height:720px;overflow:hidden;font-family:'Mont',sans-serif;color:#fff;background:#cfe7f2}
+.scene{position:absolute;inset:0;display:none;overflow:hidden;transform-origin:640px 360px}
+.el{position:absolute;left:0;top:0;transform-origin:0 0}
+.inner{position:absolute;left:0;top:0;transform:translate(-50%,-50%);line-height:0}
+.inner.b{transform:translate(-50%,-100%)}
+.tt{font-family:'Mont';font-weight:900;color:#fff;line-height:1.02;white-space:nowrap;text-align:center;letter-spacing:-.01em;
+  text-shadow:0 3px 0 rgba(40,30,50,.10),0 6px 22px rgba(30,20,40,.38),0 1px 3px rgba(30,20,40,.35)}
+.tt .wd{display:inline-block}
+.ref{font-family:'Mont';font-weight:800;font-size:21px;color:#fff;letter-spacing:.08em;line-height:1;white-space:nowrap;background:rgba(37,33,43,.88);border-radius:10px;padding:8px 14px 9px}
+.pill{font-family:'Mont';font-weight:800;color:#fff;background:#24202b;border-radius:14px;padding:10px 20px 12px;line-height:1;white-space:nowrap;font-size:34px}
+.lbl{font-family:'Mont';font-weight:900;font-size:34px;color:#fff;line-height:1;white-space:nowrap;letter-spacing:.02em;text-shadow:0 3px 14px rgba(30,20,40,.45),0 1px 2px rgba(30,20,40,.4)}
+.eye{transform-box:fill-box;transform-origin:center}
+#grain{position:absolute;inset:0;pointer-events:none;z-index:50;opacity:.10;mix-blend-mode:multiply}
+#vig{position:absolute;inset:0;pointer-events:none;z-index:51;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 62%,rgba(40,20,40,.22) 100%)}
+</style></head>
+<body>
+<div id="stage"></div>
+<script src="T.js"></script>
+<script src="art.js"></script>
+<script src="chibi.js"></script>
+<script src="props.js"></script>
+<script src="props2.js"></script>
+<script src="scenes.js"></script>
+<script>
+const stage=document.getElementById('stage');
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const eOut=p=>1-Math.pow(1-p,3), eIn=p=>p*p*p;
+const eInOut=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const eBack=p=>{const s=1.7;return 1+(s+1)*Math.pow(p-1,3)+s*Math.pow(p-1,2);};
+SCENES.sort((a,b)=>a.t0-b.t0);
+SCENES.forEach((sc,i)=>{
+  sc.t1=i<SCENES.length-1?SCENES[i+1].t0:9999; sc.tr=sc.tr??0.45;
+  const d=document.createElement('div');d.className='scene';stage.appendChild(d);sc.node=d;
+  sc.els.forEach(e=>{const w=document.createElement('div');w.className='el';w.style.zIndex=e.z??5;
+    const inn=document.createElement('div');inn.className='inner'+(e.anchor==='b'?' b':'');inn.innerHTML=e.html;
+    if(e.filter)inn.style.filter=e.filter;
+    w.appendChild(inn);d.appendChild(w);e.node=w;e.inn=inn;
+    if(e.frames){e.fr=e.frames.map(h=>{const f=document.createElement('div');f.innerHTML=h;f.style.display='none';f.style.lineHeight=0;return f;});inn.innerHTML='';e.fr.forEach(f=>inn.appendChild(f));}
+    e.wds=[...inn.querySelectorAll('.wd')];
+    e.drs=[...inn.querySelectorAll('.dr')].map(p=>{const L=p.getTotalLength?p.getTotalLength():500;p.style.strokeDasharray=L;return [p,L];});
+    if(e.poses){e.armL=inn.querySelector('.armL');e.armR=inn.querySelector('.armR');e.foreL=inn.querySelector('.foreL');e.foreR=inn.querySelector('.foreR');e.headG=inn.querySelector('.head');}
+    e.fcs=[...inn.querySelectorAll('.fc')];e.fcT=[...inn.querySelectorAll('.fcT')];e.eyes=[...inn.querySelectorAll('.eye')];e._fk=-1;
+  });
+});
+// grain overlay
+(()=>{const g=document.createElement('div');g.id='grain';g.innerHTML=`<svg width="1280" height="720"><filter id="gn"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 .5 0 0 0 0 .45 0 0 0 0 .5 0 0 0 -1.4 1.1"/></filter><rect width="1280" height="720" filter="url(#gn)"/></svg>`;stage.appendChild(g);
+  const v=document.createElement('div');v.id='vig';stage.appendChild(v);})();
+function cam(sc,t){let c=Object.assign({x:640,y:360,z:1},sc.cam0||{});
+  for(const k of (sc.cam||[])){const p=eInOut(clamp((t-k.at)/(k.d||1)));if(p<=0)continue;
+    c={x:c.x+((k.x??c.x)-c.x)*p,y:c.y+((k.y??c.y)-c.y)*p,z:c.z+((k.z??c.z)-c.z)*p};}
+  const dz=(sc.drift??0.04)*clamp((t-sc.t0)/Math.max(1,sc.t1-sc.t0+sc.tr));c.z*=1+dz;return c;}
+function render(t){
+  let i=SCENES.findIndex(s=>t>=s.t0&&t<s.t1); if(i<0) i=0;
+  const sc=SCENES[i], dt=t-sc.t0, prev=SCENES[i-1];
+  SCENES.forEach((s,k)=>{ s.node.style.display=(k===i||(k===i-1&&dt<sc.tr))?'block':'none'; s.node.style.filter='none';});
+  const tr=sc.trans||'cut';
+  if(prev&&dt<sc.tr&&tr!=='cut'){const q=eInOut(clamp(dt/sc.tr));renderScene(prev,t);prev.node.style.zIndex=1;sc.node.style.zIndex=2;
+    let a='',b='',oa=1,ob=1;const dir=sc.dir||1;
+    if(tr==='fade'){oa=q;}
+    else if(tr==='zoom'){a=`scale(${1.6-0.6*q})`;oa=clamp(q*1.8);b=`scale(${1+2*q})`;ob=1-q;}
+    else if(tr==='whip'){a=`translateX(${(1-q)*1280*dir}px)`;b=`translateX(${-q*1280*dir}px)`;
+      const bl=Math.sin(q*Math.PI)*16;sc.node.style.filter=`blur(${bl}px)`;prev.node.style.filter=`blur(${bl}px)`;}
+    else if(tr==='whipV'){a=`translateY(${(1-q)*720*dir}px)`;b=`translateY(${-q*720*dir}px)`;
+      const bl=Math.sin(q*Math.PI)*14;sc.node.style.filter=`blur(${bl}px)`;prev.node.style.filter=`blur(${bl}px)`;}
+    sc.node.style.transform=a;sc.node.style.opacity=oa;prev.node.style.transform=b;prev.node.style.opacity=ob;
+  } else { sc.node.style.transform='';sc.node.style.opacity=1; }
+  renderScene(sc,t);
+}
+function poseAt(e,t){let cur=Object.assign({lU:8,lF:0,rU:8,rF:0,tilt:0},e.poses[0][1]);
+  for(let k=1;k<e.poses.length;k++){const [at,p]=e.poses[k];const q=eInOut(clamp((t-at)/(p.d||0.4)));if(q<=0)break;
+    for(const key of ['lU','lF','rU','rF','tilt'])if(p[key]!==undefined)cur[key]+= (p[key]-cur[key])*q;}
+  return cur;}
+// mouth flaps open shortly after each spoken word starts (audible onset ~0.15s after its timestamp)
+const WSTARTS=WX.flat().map(w=>w[1]).sort((a,b)=>a-b);
+function mouthOpen(t){let lo=0,hi=WSTARTS.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(WSTARTS[m]<=t-0.15)lo=m;else hi=m-1;}const d=t-0.15-WSTARTS[lo];return d>=0&&d<0.16;}
+function renderScene(sc,t){
+  const c=cam(sc,t);
+  for(const e of sc.els){
+    const at=e.at??sc.t0, d=e.d||0.5, a=e.a||(e.at===undefined?'none':'pop');
+    if(t<at-0.001 || (e.out!==undefined && t>e.out+0.35)){ e.node.style.display='none'; continue; }
+    e.node.style.display='block';
+    const p=clamp((t-at)/d); let op=1,tx=0,ty=0,s=1,rot=e.rot||0,clip='none';
+    if(a==='pop'){ s=0.15+0.85*eBack(p); op=clamp(p*4); }
+    else if(a==='rise'){ ty=(1-eBack(p))*90; op=clamp(p*3); }
+    else if(a==='fade'){ op=eOut(p); }
+    else if(a==='wipe'){ clip=`inset(-30% ${(1-eOut(p))*100}% -30% -30%)`; }
+    else if(a==='wipeD'){ clip=`inset(-30% -30% ${(1-eOut(p))*100}% -30%)`; }
+    else if(a==='wipeU'){ clip=`inset(${(1-eOut(p))*100}% -30% -30% -30%)`; }
+    else if(a==='slideL'){ tx=(1-eOut(p))*-900; }
+    else if(a==='slideR'){ tx=(1-eOut(p))*900; }
+    else if(a==='slideD'){ ty=(1-eOut(p))*-800; }
+    else if(a==='slideU'){ ty=(1-eOut(p))*800; }
+    else if(a==='drop'){ ty=(1-eBack(p))*-240; op=clamp(p*4); }
+    else if(a==='stamp'){ s=1+(1-eOut(p))*1.4; op=clamp(p*3); }
+    else if(a==='grow'){ s=eBack(p); }
+    let x=e.x??640,y=e.y??360,ms=1;
+    if(e.move){ for(const m of [].concat(e.move)){ const mp=(m.ease==='lin'?clamp:(v=>eInOut(clamp(v))))((t-m.at)/(m.d||1)); if(mp<=0)continue; x+=((m.x??x)-x)*mp; y+=((m.y??y)-y)*mp; if(m.s!==undefined) ms*=1+(m.s-1)*mp; if(m.rot!==undefined) rot+=m.rot*mp; } }
+    const tt=t+(e.ph??(x*0.013));
+    if(e.float) ty+=Math.sin(tt*1.7)*e.float;
+    if(e.walk && (e.walkUntil===undefined||t<e.walkUntil)) ty-=Math.abs(Math.sin(tt*7))*e.walk;
+    if(e.sway) rot+=Math.sin(tt*1.4)*e.sway;
+    if(e.pulse) s*=1+Math.sin(tt*3.2)*e.pulse;
+    if(e.spin) rot+=t*e.spin;
+    if(e.breathe) s*=1+Math.sin(tt*2.1)*0.006;
+    if(e.out!==undefined && t>e.out){ const q=clamp((t-e.out)/0.3); const oa=e.outA||'pop';
+      if(oa==='pop'){op*=1-q; s*=1-0.6*eIn(q);} else if(oa==='fade'){op*=1-q;} else if(oa==='up'){ty-=eIn(q)*600;op*=1-q;} }
+    const dp=e.depth??1, Z=1+(c.z-1)*dp;
+    const X=640+(x-c.x*dp-640*(1-dp))*Z, Y=360+(y-c.y*dp-360*(1-dp))*Z;
+    e.node.style.opacity=op; if(clip!==e._clip){e.inn.style.clipPath=clip;e._clip=clip;}
+    e.node.style.transform=`translate(${X+tx*Z}px,${Y+ty*Z}px) rotate(${rot}deg) scale(${s*ms*(e.s||1)*Z})`;
+    if(e.fr){const k=(e.frUntil!==undefined&&t>e.frUntil)?0:Math.floor(t*(e.fps||6))%e.fr.length;e.fr.forEach((f,j)=>f.style.display=j===k?'block':'none');}
+    if(e.wt){ e.wds.forEach((w,j)=>{const q=clamp((t-e.wt[j])/0.28);w.style.opacity=clamp(q*2.5);w.style.transform=`translateY(${(1-eBack(q))*26}px) scale(${0.7+0.3*eBack(q)})`;}); }
+    if(e.drs.length){ const q=eOut(clamp((t-(e.drawAt??at))/(e.drawD||0.6))); e.drs.forEach(([pth,L])=>pth.style.strokeDashoffset=L*(1-q)); }
+    if(e.poses){ const P=poseAt(e,t), w=Math.sin(tt*2.3)*2;
+      const set=(n,r)=>{if(n)n.setAttribute('transform',`translate(${n.dataset.b}) rotate(${r})`);};
+      set(e.armL,P.lU+w);set(e.foreL,P.lF);set(e.armR,-P.rU-w);set(e.foreR,-P.rF);
+      e.headG&&e.headG.setAttribute('transform',`rotate(${P.tilt+Math.sin(tt*1.3)*1.5} ${e.headG.dataset.c||'0 -100'})`); }
+    if(e.fcs.length){ let k=0; if(e.fc) e.fc.forEach(([at,idx])=>{if(t>=at)k=idx;});
+      const tw=e.talk&&(e.talk===true||e.talk.some(([a,b])=>t>=a&&t<=b)), open=tw&&mouthOpen(t);
+      const key=k*2+(open?1:0); if(key!==e._fk){e.fcs.forEach((g,j)=>g.style.display=(j===k&&!open)?'inline':'none');e.fcT.forEach((g,j)=>g.style.display=(j===k&&open)?'inline':'none');e._fk=key;}
+      if(e.blink!==false&&e.eyes.length){const ph=(t+(e.x||0)*0.0037)%3.3;const v=ph<0.12?'scaleY(0.1)':'none';e.eyes.forEach(n=>n.style.transform=v);} }
+    if(e.tick) e.tick(t,e);
+  }
+}
+window.render=render; window.DUR=386.1; render(0);
+</script>
+</body></html>

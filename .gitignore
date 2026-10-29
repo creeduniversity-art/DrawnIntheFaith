@@ -5,3 +5,8 @@ engine/video_noaudio.mp4
 engine/sheet.py
 __pycache__/
 output/holy_spirit_full.mp4
+all_saints_all_souls/engine/pv/
+all_saints_all_souls/engine/parts/
+all_saints_all_souls/engine/render.log
+all_saints_all_souls/engine/video_noaudio.mp4
+all_saints_all_souls/output/
