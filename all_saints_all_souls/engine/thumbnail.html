@@ -1,0 +1,65 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Thumbnail</title>
+<style>
+@font-face{font-family:'Mont';font-weight:800;src:url(fonts/Montserrat-800.woff2)}
+@font-face{font-family:'Mont';font-weight:900;src:url(fonts/Montserrat-900.woff2)}
+html,body{margin:0;background:#000}
+#t{position:relative;width:1280px;height:720px;overflow:hidden;font-family:Mont}
+.L{position:absolute;inset:0;overflow:hidden}
+.a{position:absolute;line-height:0}
+.ch{position:absolute;line-height:0;transform:translate(-50%,-100%)}
+.c{position:absolute;line-height:0;transform:translate(-50%,-50%)}
+.txt{position:absolute;font-weight:900;color:#fff;line-height:1;white-space:nowrap;letter-spacing:-.01em;
+  -webkit-text-stroke:16px #25212b;paint-order:stroke fill;filter:drop-shadow(0 9px 0 rgba(37,33,43,.55))}
+.hl{position:absolute;font-weight:900;color:#25212b;line-height:1;white-space:nowrap;background:#ffcf3a;border:9px solid #25212b;border-radius:16px;padding:8px 24px 14px;filter:drop-shadow(0 9px 0 rgba(37,33,43,.55))}
+.vig{position:absolute;inset:0;background:radial-gradient(ellipse at 55% 50%,rgba(0,0,0,0) 55%,rgba(30,15,30,.35) 100%);pointer-events:none}
+</style></head><body><div id="t"></div>
+<script src="art.js"></script><script src="chibi.js"></script><script src="props.js"></script><script src="props2.js"></script>
+<script>
+const $=document.getElementById('t');
+const v=new URLSearchParams(location.search).get('v')||'a';
+// renders a layer list (from land()/heavenBg()/cemetery()) as a static picture
+function layers(L){return L.map(e=>`<div class="a" style="left:${e.x}px;top:${e.y}px;transform:translate(-50%,-50%);${e.filter?'filter:'+e.filter:''}">${e.html}</div>`).join('');}
+const CH=(o,x,feet,k)=>`<div class="ch" style="left:${x}px;top:${feet+30*k}px">${chibi({...o,k})}</div>`;
+const C=(html,x,y,ex='')=>`<div class="c" style="left:${x}px;top:${y}px;${ex}">${html}</div>`;
+const ARROW=(d,head)=>`<svg class="a" style="left:0;top:0" width="1280" height="720" viewBox="0 0 1280 720"><path d="${d}" stroke="#25212b" stroke-width="34" fill="none" stroke-linecap="round"/><path d="${d}" stroke="#fff" stroke-width="18" fill="none" stroke-linecap="round"/><path d="${head}" fill="#fff" stroke="#25212b" stroke-width="8" stroke-linejoin="round"/></svg>`;
+const SAINT=(i,ex={})=>({...SAINTV[i],halo:true,...ex});
+const SAINTV=[{robe:'robe',c1:'#fbf8f2',c2:'#4f7cc4',hair:'girl',hc:'#3f3434',skin:'tan'},{robe:'robe',c1:'#fbf8f2',c2:'#c8463d',hair:'teen',hc:'#2e2a2a',skin:'dark'},{robe:'robe',c1:'#fbf8f2',c2:'#e2b04a',hair:'veil',hc:'#9fc6e0'},{robe:'robe',c1:'#fbf8f2',c2:'#7cb86a',hair:'paul',hc:'#8d7b6c',beard:'long',skin:'brown'},{robe:'robe',c1:'#fbf8f2',c2:'#c9a6e0',hair:'bun',hc:'#d9d6de'}];
+
+if(v==='a'){
+  // ---- Concept A: "HALLOWEEN IS CATHOLIC?!" — spooky-cute street vs glowing heaven
+  const left=land({h:22,s:70,seed:81,city:{x0:-200,x1:900,type:'modern'},mountains:false,hy1:470,hy2:560,gy:640,sun:[300,330],sky1:'#f07a4e',sky2:'#ffc98a',trees:2,bushes:0,clearX:[300,400]});
+  const right=heavenBg({h:46,seed:61,sunY:220,fy:560,ny:650});
+  $.innerHTML=`
+  <div class="L" style="clip-path:polygon(0 0,700px 0,560px 720px,0 720px)">${layers(left)}</div>
+  <div class="L" style="clip-path:polygon(700px 0,1280px 0,1280px 720px,560px 720px)">${layers(right)}${C(sunburst(900,'#fff',.45),960,250)}</div>
+  <svg class="a" style="left:0;top:0" width="1280" height="720"><path d="M700,-10 L560,730" stroke="#25212b" stroke-width="22"/><path d="M700,-10 L560,730" stroke="#fff" stroke-width="10"/></svg>
+  ${C(pumpkin(1.25),90,655)}${C(pumpkin(.95),465,672)}
+  ${CH({...KIDP(),eyes:'wide',brows:'up',mouth:'scream',armL:'raise',armR:'raise'},270,668,1.42)}
+  ${CH(SAINT(0,{eyes:'happy',mouth:'grin',armL:'out',armR:'out'}),850,640,1.05)}
+  ${CH(SAINT(1,{eyes:'happy',mouth:'grin',armL:'raise',armR:'raise'}),1010,610,1.25)}
+  ${CH(SAINT(2,{eyes:'happy',mouth:'smile',armL:'out',armR:'out'}),1175,640,1.05)}
+  ${ARROW('M450,440 C560,330 690,320 790,375','M770,340 L838,402 L752,412Z')}
+  <div class="txt" style="left:34px;top:26px;font-size:112px">HALLOWEEN</div>
+  <div class="hl" style="left:44px;top:150px;font-size:76px;transform:rotate(-3deg)">IS CATHOLIC?!</div>
+  <div class="vig"></div>`;
+}
+if(v==='b'){
+  // ---- Concept B: "YOU CAN STILL HELP THEM" — golden-hour cemetery, prayer lifts a soul to heaven
+  const bg=cemetery({seed:77,sky1:'#f6b27a',sky2:'#ffeccc',sun:[1000,160],stones:[[130,1.1]],trees:3,clearX:[700,700]});
+  $.innerHTML=`${layers(bg)}
+  ${C(sunburst(1000,'#fff',.5),1010,170)}
+  ${C(`<div style="width:190px;height:250px;border-radius:95px 95px 0 0;background:#fffbe8;border:7px solid #25212b;box-shadow:0 0 90px 30px #fff"></div>`,1120,190)}
+  ${C(svg(240,300,'-120 -280 240 300',gravestone(0,0,1.7,true)),610,610)}
+  ${C(candle(1.2),760,570)}${C(candle(.9),470,590)}
+  ${CH({robe:'hoodie',c1:'#f08aa6',c2:'#d76f8c',c3:'#7a8fc4',hair:'girl',hc:'#9a6a3e',eyes:'closed',mouth:'smile',armL:'pray',armR:'pray',tilt:8},300,650,1.7)}
+  ${CH({robe:'dress',c1:'#f6e9d6',hair:'bun',hc:'#d9d6de',glasses:true,eyes:'happy',mouth:'grin',armL:'raise',armR:'wave'},930,330,1.0)}
+  ${C(svg(220,80,'-110 -40 220 80','<ellipse rx="100" ry="26" fill="#fff" opacity=".8" filter="url(#bl6)"/>'),930,365)}
+  ${ARROW('M760,470 C800,420 850,400 880,385','M860,360 L912,372 L878,412Z')}
+  <div class="txt" style="left:34px;top:24px;font-size:84px">YOU CAN STILL</div>
+  <div class="hl" style="left:44px;top:126px;font-size:92px;transform:rotate(-3deg)">HELP THEM</div>
+  ${C(calTile('NOV','1–8','#8f7ac8'),1170,590,'transform:translate(-50%,-50%) rotate(6deg) scale(.95)')}
+  <div class="vig"></div>`;
+}
+function KIDP(){return {robe:'hoodie',c1:'#ffd36b',c2:'#e8b94a',c3:'#7a8fc4',hair:'teen',hc:'#9a6a3e',hat:HAT_PUMPKIN};}
+</script></body></html>

@@ -81,7 +81,7 @@ const SCENES=[
 ]},
 // "So Halloween literally means the night before All Saints"
 {t0:W(4,'so')-0.1,trans:'whip',els:[...land({h:26,s:58,seed:83,mountains:false,hy1:540,hy2:600,gy:665,sun:[640,200],rays:true,trees:4,bushes:4,clearX:[640,500]}),
-  CAL('OCT','31','#f28c28',330,320,W(4,'halloween')),{html:pumpkin(1.6),x:330,y:470,z:15,at:W(4,'halloween')+0.1,a:'pop'},
+  CAL('OCT','31','#f28c28',330,320,W(4,'halloween')),{html:pumpkin(.85),x:330,y:470,z:15,at:W(4,'halloween')+0.1,a:'pop'},
   {html:stars(300,90,5),x:330,y:120,z:6,at:W(4,'night'),a:'fade'},
   {html:arrowSVG(200),x:640,y:320,z:14,at:W(4,'before'),a:'wipe',d:.4},
   CAL('NOV','1','#e2b04a',950,320,W(4,'saints')),{html:HALO,x:950,y:200,z:15,at:W(4,'saints'),a:'drop'},
